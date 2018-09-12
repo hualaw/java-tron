@@ -52,10 +52,6 @@ import org.tron.common.crypto.Hash;
 import org.tron.common.overlay.discover.node.NodeHandler;
 import org.tron.common.overlay.discover.node.NodeManager;
 import org.tron.common.overlay.message.Message;
-import org.tron.common.runtime.Runtime;
-import org.tron.common.runtime.vm.program.ProgramResult;
-import org.tron.common.runtime.vm.program.invoke.ProgramInvokeFactoryImpl;
-import org.tron.common.storage.DepositImpl;
 import org.tron.common.utils.Base58;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.Sha256Hash;
@@ -69,7 +65,6 @@ import org.tron.core.capsule.ContractCapsule;
 import org.tron.core.capsule.ExchangeCapsule;
 import org.tron.core.capsule.ProposalCapsule;
 import org.tron.core.capsule.TransactionCapsule;
-import org.tron.core.capsule.TransactionResultCapsule;
 import org.tron.core.capsule.WitnessCapsule;
 import org.tron.core.config.Parameter.ChainConstant;
 import org.tron.core.config.Parameter.ChainParameters;
@@ -83,7 +78,6 @@ import org.tron.core.db.EnergyProcessor;
 import org.tron.core.db.Manager;
 import org.tron.core.db.PendingManager;
 import org.tron.core.exception.AccountResourceInsufficientException;
-import org.tron.core.exception.BadTransactionException;
 import org.tron.core.exception.ContractExeException;
 import org.tron.core.exception.ContractValidateException;
 import org.tron.core.exception.DupTransactionException;
@@ -110,7 +104,6 @@ import org.tron.protos.Protocol.SmartContract.ABI;
 import org.tron.protos.Protocol.SmartContract.ABI.Entry.StateMutabilityType;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
-import org.tron.protos.Protocol.Transaction.Result.code;
 import org.tron.protos.Protocol.TransactionSign;
 
 @Slf4j
@@ -874,46 +867,46 @@ public class Wallet {
 
     byte[] selector = getSelector(triggerSmartContract.getData().toByteArray());
 
-    if (!isConstant(abi, selector)) {
-      return trxCap.getInstance();
-    } else {
-      if (!Args.getInstance().isSupportConstant()) {
-        throw new ContractValidateException("this node don't support constant");
-      }
-      DepositImpl deposit = DepositImpl.createRoot(dbManager);
-
-      Block headBlock;
-      List<BlockCapsule> blockCapsuleList = dbManager.getBlockStore().getBlockByLatestNum(1);
-      if (CollectionUtils.isEmpty(blockCapsuleList)) {
-        throw new HeaderNotFound("latest block not found");
-      } else {
-        headBlock = blockCapsuleList.get(0).getInstance();
-      }
-
-      Runtime runtime = new Runtime(trxCap.getInstance(), new BlockCapsule(headBlock), deposit,
-          new ProgramInvokeFactoryImpl(), true);
-      runtime.execute();
-      runtime.go();
-      runtime.finalization();
-      // TODO exception
-      if (runtime.getResult().getException() != null) {
-        RuntimeException e = runtime.getResult().getException();
-        logger.warn("Constant call has error {}", e.getMessage());
-        throw e;
-      }
-
-      ProgramResult result = runtime.getResult();
-      TransactionResultCapsule ret = new TransactionResultCapsule();
-
-      builder.addConstantResult(ByteString.copyFrom(result.getHReturn()));
-      ret.setStatus(0, code.SUCESS);
-      if (StringUtils.isNoneEmpty(runtime.getRuntimeError())) {
-        ret.setStatus(0, code.FAILED);
-        retBuilder.setMessage(ByteString.copyFromUtf8(runtime.getRuntimeError())).build();
-      }
-      trxCap.setResult(ret);
-      return trxCap.getInstance();
-    }
+    // if (!isConstant(abi, selector)) {
+    return trxCap.getInstance();
+    // } else {
+    //   if (!Args.getInstance().isSupportConstant()) {
+    //     throw new ContractValidateException("this node don't support constant");
+    //   }
+    //   DepositImpl deposit = DepositImpl.createRoot(dbManager);
+    //
+    //   Block headBlock;
+    //   List<BlockCapsule> blockCapsuleList = dbManager.getBlockStore().getBlockByLatestNum(1);
+    //   if (CollectionUtils.isEmpty(blockCapsuleList)) {
+    //     throw new HeaderNotFound("latest block not found");
+    //   } else {
+    //     headBlock = blockCapsuleList.get(0).getInstance();
+    //   }
+    //
+    //   Runtime runtime = new Runtime(trxCap.getInstance(), new BlockCapsule(headBlock), deposit,
+    //       new ProgramInvokeFactoryImpl(), true);
+    //   runtime.execute();
+    //   runtime.go();
+    //   runtime.finalization();
+    //   // TODO exception
+    //   if (runtime.getResult().getException() != null) {
+    //     RuntimeException e = runtime.getResult().getException();
+    //     logger.warn("Constant call has error {}", e.getMessage());
+    //     throw e;
+    //   }
+    //
+    //   ProgramResult result = runtime.getResult();
+    //   TransactionResultCapsule ret = new TransactionResultCapsule();
+    //
+    //   builder.addConstantResult(ByteString.copyFrom(result.getHReturn()));
+    //   ret.setStatus(0, code.SUCESS);
+    //   if (StringUtils.isNoneEmpty(runtime.getRuntimeError())) {
+    //     ret.setStatus(0, code.FAILED);
+    //     retBuilder.setMessage(ByteString.copyFromUtf8(runtime.getRuntimeError())).build();
+    //   }
+    //   trxCap.setResult(ret);
+    //   return trxCap.getInstance();
+    // }
   }
 
   public SmartContract getContract(GrpcAPI.BytesMessage bytesMessage) {
